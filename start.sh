@@ -31,11 +31,10 @@ fi
 
 # Create a directory for the dump in /data
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-DUMP_DIR="/data/dump_$TIMESTAMP"
-mkdir -p "$DUMP_DIR"
+DUMP_FILE="/data/backup_$TIMESTAMP.archive"
 
-echo "Step 1: Dumping data from backup database..."
-if "$DUMP_TOOL" --uri="$BACKUP_URL" --out="$DUMP_DIR"; then
+echo "Step 1: Dumping data from backup database (Archive mode)..."
+if "$DUMP_TOOL" --uri="$BACKUP_URL" --archive="$DUMP_FILE" --gzip; then
   echo "✅ Dump successful."
 else
   echo "❌ Dump failed."
@@ -43,8 +42,11 @@ else
 fi
 
 echo "Step 2: Restoring data to migration database..."
-# Use --drop to overwrite existing collections in the destination if they exist
-if "$RESTORE_TOOL" --uri="$MIGRATION_URL" "$DUMP_DIR"; then
+# --archive: restore from archive file
+# --gzip: decompress on the fly
+# --drop: overwrite existing collections
+# --nsFrom/--nsTo: ensures data maps to the DB in MIGRATION_URL regardless of source DB name
+if "$RESTORE_TOOL" --uri="$MIGRATION_URL" --archive="$DUMP_FILE" --gzip --drop --nsFrom='*' --nsTo='*'; then
   echo "✅ Restore successful."
 else
   echo "❌ Restore failed."
@@ -53,10 +55,10 @@ fi
 
 # Step 3: Create zip of the dump
 echo "Step 3: Creating zip of dump..."
-ZIP_NAME="dump_$TIMESTAMP.zip"
+ZIP_NAME="backup_$TIMESTAMP.zip"
 ZIP_PATH="/data/$ZIP_NAME"
-# Use -j to junk paths if you want, but standard zip -r is safer for mongo dumps
-zip -r "$ZIP_PATH" "$DUMP_DIR"
+# Zip the archive file
+zip -j "$ZIP_PATH" "$DUMP_FILE"
 
 echo "✅ Zip created: $ZIP_PATH"
 echo "✨ Migration completed successfully!"

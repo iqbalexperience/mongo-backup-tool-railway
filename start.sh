@@ -29,8 +29,9 @@ if [ ! -f "$RESTORE_TOOL" ] || [ ! -x "$RESTORE_TOOL" ]; then
   exit 1
 fi
 
-# Create a temporary directory for the dump
-DUMP_DIR="./tmp_dump_$(date +%Y%m%d_%H%M%S)"
+# Create a directory for the dump in /data
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+DUMP_DIR="/data/dump_$TIMESTAMP"
 mkdir -p "$DUMP_DIR"
 
 echo "Step 1: Dumping data from backup database..."
@@ -38,7 +39,6 @@ if "$DUMP_TOOL" --uri="$BACKUP_URL" --out="$DUMP_DIR"; then
   echo "✅ Dump successful."
 else
   echo "❌ Dump failed."
-  rm -rf "$DUMP_DIR"
   exit 1
 fi
 
@@ -48,13 +48,27 @@ if "$RESTORE_TOOL" --uri="$MIGRATION_URL" "$DUMP_DIR"; then
   echo "✅ Restore successful."
 else
   echo "❌ Restore failed."
-  # Cleanup is still good even on failure
-  rm -rf "$DUMP_DIR"
   exit 1
 fi
 
-# Cleanup
-echo "Cleaning up temporary files..."
-rm -rf "$DUMP_DIR"
+# Step 3: Create zip of the dump
+echo "Step 3: Creating zip of dump..."
+ZIP_NAME="dump_$TIMESTAMP.zip"
+ZIP_PATH="/data/$ZIP_NAME"
+# Use -j to junk paths if you want, but standard zip -r is safer for mongo dumps
+zip -r "$ZIP_PATH" "$DUMP_DIR"
 
+echo "✅ Zip created: $ZIP_PATH"
 echo "✨ Migration completed successfully!"
+echo ""
+echo "--------------------------------------------------"
+echo "Backup available for download at:"
+echo "http://localhost:8080/$ZIP_NAME"
+echo "--------------------------------------------------"
+echo ""
+
+# Step 4: Start web server to serve the zip file
+echo "Starting web server to serve /data on port 8080..."
+# We serve /data directory so the zip file is accessible
+cd /data
+python3 -m http.server 8080

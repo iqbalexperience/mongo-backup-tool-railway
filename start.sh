@@ -1,13 +1,16 @@
 #!/bin/bash
 
-# Load environment variables if .env file exists
+# Load environment variables if .env file exists (local development)
 if [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  # Use a safer way to export variables
+  set -a
+  source .env
+  set +a
 fi
 
 # Ensure backup and migration URLs are provided
 if [ -z "$BACKUP_URL" ] || [ -z "$MIGRATION_URL" ]; then
-  echo "Error: BACKUP_URL and MIGRATION_URL must be set in your .env file."
+  echo "Error: BACKUP_URL and MIGRATION_URL must be set as environment variables."
   exit 1
 fi
 

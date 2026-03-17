@@ -1,8 +1,8 @@
 # Use a slim Debian image
 FROM debian:stable-slim
 
-# Install dependencies if any (none required for static bin but good for debugging)
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install dependencies
+RUN apt-get update && apt-get install -y ca-certificates libgssapi-krb5-2 && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app

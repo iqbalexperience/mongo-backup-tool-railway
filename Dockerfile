@@ -10,6 +10,9 @@ WORKDIR /app
 # Copy the database tools (assuming they are in the context)
 COPY mongodb-database-tools ./mongodb-database-tools
 
+# Ensure tools are executable
+RUN chmod -R +x ./mongodb-database-tools/bin/
+
 # Copy the start script
 COPY start.sh ./start.sh
 
